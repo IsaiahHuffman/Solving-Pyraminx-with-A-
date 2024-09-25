@@ -7,6 +7,11 @@ import random
 #Therefore, I will refer to myself as the author and the friend who wrote the basics of the GUI as the Peer.
 #From hereon, Peer code will be designated as such, and otherwise the code will be mine as the Author.
 
+flag = 0
+counterClockToggle = 0
+isSolved = False
+solvedText = ""
+
 #GUI code is from peer, not from author
 def reset():
     global startingcolors
@@ -105,6 +110,36 @@ def reset():
         yval = yval + 30
     updateGui()
 
+
+
+#To save processing power, add ability to toggle on/off updating of the graphics
+def toggle_func():
+    global flag
+    global toggleButton, toggleText
+    if ((flag == 0) or (flag == 2)):
+        flag = 1
+        toggleText = canvas.create_text(206, 750, text="Toggle is On", fill="black", font=('Helvetica 15 bold'))
+        toggleButton.config(bg="green")
+    else:
+        toggleButton.config(bg="gray")
+        flag = 2
+        #canvas.delete(toggleText)
+        updateGui()
+
+def counterClockToggle_func():
+    global counterClockToggle
+
+    if (counterClockToggle == 0):
+        counterClockToggle = 1
+        counterClockToggleButton.config(bg="blue", text = "Counter Moves Only")
+    elif (counterClockToggle == 1):
+        counterClockToggle = 2
+        counterClockToggleButton.config(bg="orange", text = "Clockwise Moves Only")
+    else:
+        counterClockToggle = 0
+        counterClockToggleButton.config(bg="gray", text = "All Moves Possible")
+
+
 #As this function and the next 3 below it are GUI,
 #these were wrote by the peer and not the author
 def triangle(x,y):
@@ -140,9 +175,24 @@ def solved(a, b):
 
 #GUI for creating the faces of the Pyraminx, Peer work that was heavily tweaked by Author
 def updateGui():
-    canvas.delete("all")
     if solved([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3], currentcolors):
-        canvas.create_text(300, 50, text="SOLVED!!!", fill="black", font=('Helvetica 15 bold'))
+        global solvedText
+        solvedText = canvas.create_text(300, 50, text="SOLVED!!!", fill="black", font=('Helvetica 15 bold'))
+        global isSolved
+        isSolved = True
+    else:
+        canvas.itemconfig(solvedText, text= "")
+
+
+
+    #Is toggle flag on
+    global flag
+    if (flag == 1):
+        return
+
+
+    canvas.delete("all")
+
 
     #1 Red
     canvas.create_polygon(triangle(500, 150), fill=colors[currentcolors[0]], outline = "black")
@@ -256,10 +306,15 @@ def updateGui():
     #canvas.create_text(960, 340, text = "63")
     canvas.create_text(840, 80, text="Green", font=("Helvetica", 30, "bold"), fill="green")
 
+    #Reprint counterClockToggle because it was getting deleted by my canvas clear at the top of this function
+    global counterClockToggleText
+    counterClockToggleText = canvas.create_text(455, 750, text="A* Moveset", fill="black", font=('Helvetica 15 bold'))
+
 #Peer code that takes user input for randomizer
-def entry_func():
+def randomizer_func():
     entry_text = entry.get()
-    randompyraminx(int(entry_text))
+    if entry_text.isdigit():
+        randompyraminx(int(entry_text))
 
 #Below is nearly 2000 lines that handle pyraminx rotations
 #Using naming convention devised by peer. Written by author
@@ -2136,9 +2191,20 @@ def randompyraminx(moves):
     if moves == 0:
         reset()
 
+    lowerBound = 0
+    upperBound = 27
+
+    if (counterClockToggle == 1):
+        lowerBound = 14
+        upperBound = 27
+        print("counteronly")
+    elif (counterClockToggle == 2):
+        lowerBound = 0
+        upperBound = 13
+        print("clockonly")
 
     for i in range(moves):
-        move = random.randint(0,27)
+        move = random.randint(lowerBound, upperBound)
         match move:
             case 0:
                 rTopClock(currentcolors)
@@ -2197,6 +2263,7 @@ def randompyraminx(moves):
             case 27:
                 yBLTPCU(currentcolors)
 
+
 #MAIN (GUI Code wrote by Peer, with tweaks by Author)
 root = Tk()
 root.title("Pyraminx")
@@ -2206,12 +2273,21 @@ canvas.pack()
 
 reset()
 
-button = Button(root, text="Randomize", command=entry_func, bg = 'grey')
-button.place(x = 750, y = 770)
+#Randomize button and user entry
+button = Button(root, text="Randomize", command=randomizer_func, bg = 'grey')
+button.place(x = 715, y = 765)
 entry = Entry(root)
-entry.place(x = 565,  y = 770)
-root.mainloop()
+entry.place(x = 580,  y = 770)
 
+#Toggle graphics button
+toggleButton = Button(root, text = "Toggle GUI Update", command = toggle_func, bg = 'gray')
+toggleButton.place(x = 150, y = 765)
+
+#Toggle if A* scrambler should only scramble using counter or counterclockwise movements
+counterClockToggleButton = Button(root, text = "All Moves Possible", command = counterClockToggle_func, bg = 'gray')
+counterClockToggleButton.place(x = 400, y = 765)
+counterClockToggleText = canvas.create_text(455, 750, text="A* Moveset", fill="black", font=('Helvetica 15 bold'))
+root.mainloop()
 
 
 
