@@ -2207,7 +2207,7 @@ canvas.pack()
 reset()
 
 button = Button(root, text="Randomize", command=entry_func, bg = 'grey')
-button.place(x = 750, y = 770)
+button.place(x = 700, y = 765)
 entry = Entry(root)
 entry.place(x = 565,  y = 770)
 root.mainloop()
