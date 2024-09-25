@@ -105,6 +105,24 @@ def reset():
         yval = yval + 30
     updateGui()
 
+
+flag = 0
+
+#To save processing power, add ability to toggle on/off updating of the graphics
+def toggle_func():
+    global flag
+    global toggleButton, toggleText
+    if ((flag == 0) or (flag == 2)):
+        flag = 1
+        toggleText = canvas.create_text(311, 755, text="Toggle is On", fill="black", font=('Helvetica 15 bold'))
+        toggleButton.config(bg="green")
+    else:
+        toggleButton.config(bg="gray")
+        flag = 2
+        canvas.delete(toggleText)
+        updateGui()
+
+
 #As this function and the next 3 below it are GUI,
 #these were wrote by the peer and not the author
 def triangle(x,y):
@@ -140,6 +158,11 @@ def solved(a, b):
 
 #GUI for creating the faces of the Pyraminx, Peer work that was heavily tweaked by Author
 def updateGui():
+    global flag
+
+    if (flag == 1):
+        return
+
     canvas.delete("all")
     if solved([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3], currentcolors):
         canvas.create_text(300, 50, text="SOLVED!!!", fill="black", font=('Helvetica 15 bold'))
@@ -268,7 +291,7 @@ def rTopClock(pcolors):
     pcolors[0] = pcolors[48]
     pcolors[48] = pcolors[32]
     pcolors[32] = tempcolor
-    updateGui()
+    print("entered")
 
 def rTopCounterClock(pcolors):
     tempcolor = pcolors[0]
@@ -2206,10 +2229,17 @@ canvas.pack()
 
 reset()
 
+#Randomize button and user entry
 button = Button(root, text="Randomize", command=entry_func, bg = 'grey')
 button.place(x = 700, y = 765)
 entry = Entry(root)
 entry.place(x = 565,  y = 770)
+
+#Toggle graphics button
+toggleButton = Button(root, text = "Toggle GUI Update", command = toggle_func, bg = 'gray')
+toggleButton.place(x = 300, y = 765)
+
+#
 root.mainloop()
 
 
