@@ -81,6 +81,18 @@ def astar(startPyramid, endPyramid):
             if (flag == 1):
                 toggle_func()
             updateGui()
+
+            #Print path to the terminal
+            path = []
+            current = currentNode
+            while current is not None:
+                path.append(current.configuration)
+                current = current.parent
+            for i, config in enumerate(reversed(path)):
+                print(f"Step {i + 1}: {config}")
+
+
+
             break
 
         possibleMoves = fetchPossibleMoves()
