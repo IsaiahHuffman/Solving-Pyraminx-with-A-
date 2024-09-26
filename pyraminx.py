@@ -1,6 +1,9 @@
 from tkinter import *
 from tkinter import ttk
 import random
+import heapq
+from heapq import heapify, heappush
+import copy
 
 #For confidentiality reasons that were mentioned by Dr. Goldsmith,
 #I the author was warned not to put my name in this code.
@@ -9,8 +12,154 @@ import random
 
 flag = 0
 counterClockToggle = 0
-isSolved = False
-solvedText = ""
+startingcolors = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]
+startingcopy = startingcolors
+
+
+
+class Node():
+    def __init__(self, parent = None, configuration = None):
+        self.parent = parent
+        self.configuration = configuration
+        self.g = 0  # Distance from start to current node
+        self.h = 0  # Heuristic cost to the goal
+        self.f = 0  # Total cost (g + h)
+
+
+    def __eq__(self, other):
+        return self.configuration == other.configuration
+
+
+    def __lt__(self, other):
+        return self.f < other.f
+
+
+def findHeuristic(startPyramid):
+        return 1
+
+def astar(startPyramid, endPyramid):
+    startNode = Node(None, startPyramid)
+    startNode.configuration = startPyramid
+    startNode.g = startNode.f = 0
+    startNode.h = findHeuristic(startPyramid)
+
+
+    endNode = Node(None, endPyramid)
+    endNode.g = endNode.h = endNode.f = 0
+
+    #open list that I am storing as a prio queue min heap
+    #Storing nodes that have yet to be reached
+    heap = []
+
+    #Closed list to store visited nodes
+    closedList = []
+
+    heappush(heap, startNode)
+    heapify(heap)
+
+
+    while (heap):
+        currentNode = heap[0]
+        if currentNode.configuration is None:
+            print("Error: currentNode.config at top is None!")
+
+
+
+        for entry in heap:
+            if entry.f < currentNode.f:
+                currentNode = entry
+
+
+        heapq.heappop(heap)
+        closedList.append(currentNode)
+
+        if solved(currentNode.configuration, endPyramid):
+            print("Solved!!!")
+            global currentcolors
+            currentcolors = currentNode.configuration
+
+            global flag
+            if (flag == 1):
+                toggle_func()
+            updateGui()
+            break
+
+        possibleMoves = fetchPossibleMoves()
+
+        for move in possibleMoves:
+            currentNodeClone = copy.deepcopy(currentNode)
+            newConfiguration = applyMoves(currentNodeClone.configuration, move)
+
+            child = Node(parent = currentNode, configuration = newConfiguration)
+            child.g = currentNode.g + 1
+            child.h = findHeuristic(child.configuration)
+            child.f = child.g + child.h
+
+
+
+            if any(node.configuration == child.configuration for node in closedList):
+                continue
+
+            heapq.heappush(heap,child)
+
+        heapify(heap)
+
+
+def applyMoves(configuration, move):
+    configurationClone = configuration
+    if configurationClone is None:
+        print("Error: pcolors is None!")
+    newConfiguration = move(configurationClone)
+    return newConfiguration
+
+
+def fetchPossibleMoves():
+    global counterClockToggle
+    possibleMoves = []
+    totalMoves = []
+
+    totalMoves.append(rTopClock)
+    totalMoves.append(rSecondClock)
+    totalMoves.append(rThirdClock)
+    totalMoves.append(rBottomClock)
+    totalMoves.append(bTopClock)
+    totalMoves.append(bSecondClock)
+    totalMoves.append(bThirdClock)
+    totalMoves.append(bBottomClock)
+    totalMoves.append(rBLFPC)
+    totalMoves.append(rBLTPC)
+    totalMoves.append(rBRFPC)
+    totalMoves.append(rBRTPC)
+    totalMoves.append(yBLFPC)
+    totalMoves.append(yBLTPC)
+
+    totalMoves.append(rTopCounterClock)
+    totalMoves.append(rSecondCounterClock)
+    totalMoves.append(rThirdCounterClock)
+    totalMoves.append(rBottomCounterClock)
+    totalMoves.append(bTopCounterClock)
+    totalMoves.append(bSecondCounterClock)
+    totalMoves.append(bThirdCounterClock)
+    totalMoves.append(bBottomCounterClock)
+    totalMoves.append(rBLFPCU)
+    totalMoves.append(rBLTPCU)
+    totalMoves.append(rBRFPCU)
+    totalMoves.append(rBRTPCU)
+    totalMoves.append(yBLFPCU)
+    totalMoves.append(yBLTPCU)
+
+    if (counterClockToggle == 0):
+        for i in range(28):
+            possibleMoves.append(totalMoves[i])
+    elif (counterClockToggle == 1):
+        for i in range(14,28):
+            possibleMoves.append(totalMoves[i])
+    elif (counterClockToggle == 2):
+        for i in range(15):
+            possibleMoves.append(totalMoves[i])
+
+    return possibleMoves
+
 
 #GUI code is from peer, not from author
 def reset():
@@ -64,30 +213,30 @@ def reset():
     clock_list_two = [
         {"button": Button(root, text="Bottom Left 5 Pyramid Clock", bg="red"), "function": rBLFPC, "arg1": currentcolors},
         {"button": Button(root, text="Bottom Left 5 Pyramid Counter", bg="red"), "function": rBLFPCU, "arg1": currentcolors},
-        {"button": Button(root, text="Bottom Left 2 Pyramid Clock", bg="red"), "function": rBLTPC, "arg1": currentcolors},
-        {"button": Button(root, text="Bottom Left 2 Pyramid Counter", bg="red"), "function": rBLTPCU, "arg1": currentcolors},
+        {"button": Button(root, text="Bottom Left 3 Pyramid Clock", bg="red"), "function": rBLTPC, "arg1": currentcolors},
+        {"button": Button(root, text="Bottom Left 3 Pyramid Counter", bg="red"), "function": rBLTPCU, "arg1": currentcolors},
         {"button": Button(root, text="Bottom Right 5 Pyramid Clock", bg="red"), "function": rBRFPC, "arg1": currentcolors},
         {"button": Button(root, text="Bottom Right 5 Pyramid Counter", bg="red"), "function": rBRFPCU, "arg1": currentcolors},
-        {"button": Button(root, text="Bottom Right 2 Pyramid Clock", bg="red"), "function": rBRTPC, "arg1": currentcolors},
-        {"button": Button(root, text="Bottom Right 2 Pyramid Counter", bg="red"), "function": rBRTPCU, "arg1": currentcolors},
+        {"button": Button(root, text="Bottom Right 3 Pyramid Clock", bg="red"), "function": rBRTPC, "arg1": currentcolors},
+        {"button": Button(root, text="Bottom Right 3 Pyramid Counter", bg="red"), "function": rBRTPCU, "arg1": currentcolors},
 
         {"button": Button(root, text="Bottom Left 5 Pyramid Clock", bg="green"), "function": gBLFPC, "arg1": currentcolors},
         {"button": Button(root, text="Bottom Left 5 Pyramid Counter", bg="green"), "function": gBLFPCU, "arg1": currentcolors},
-        {"button": Button(root, text="Bottom Left 2 Pyramid Clock", bg="green"), "function": gBLTPC, "arg1": currentcolors},
-        {"button": Button(root, text="Bottom Left 2 Pyramid Counter", bg="green"), "function": gBLTPCU, "arg1": currentcolors},
+        {"button": Button(root, text="Bottom Left 3 Pyramid Clock", bg="green"), "function": gBLTPC, "arg1": currentcolors},
+        {"button": Button(root, text="Bottom Left 3 Pyramid Counter", bg="green"), "function": gBLTPCU, "arg1": currentcolors},
         {"button": Button(root, text="Bottom Right 5 Pyramid Clock", bg="green"), "function": gBRFPC, "arg1": currentcolors},
         {"button": Button(root, text="Bottom Right 5 Pyramid Counter", bg="green"), "function": gBRFPCU, "arg1": currentcolors},
-        {"button": Button(root, text="Bottom Right 2 Pyramid Clock", bg="green"), "function": gBRTPC, "arg1": currentcolors},
-        {"button": Button(root, text="Bottom Right 2 Pyramid Counter", bg="green"), "function": gBRTPCU, "arg1": currentcolors},
+        {"button": Button(root, text="Bottom Right 3 Pyramid Clock", bg="green"), "function": gBRTPC, "arg1": currentcolors},
+        {"button": Button(root, text="Bottom Right 3 Pyramid Counter", bg="green"), "function": gBRTPCU, "arg1": currentcolors},
 
         {"button": Button(root, text="Bottom Left 5 Pyramid Clock", bg="yellow"), "function": yBLFPC, "arg1": currentcolors},
         {"button": Button(root, text="Bottom Left 5 Pyramid Counter", bg="yellow"), "function": yBLFPCU, "arg1": currentcolors},
-        {"button": Button(root, text="Bottom Left 2 Pyramid Clock", bg="yellow"), "function": yBLTPC, "arg1": currentcolors},
-        {"button": Button(root, text="Bottom Left 2 Pyramid Counter", bg="yellow"), "function": yBLTPCU, "arg1": currentcolors},
+        {"button": Button(root, text="Bottom Left 3 Pyramid Clock", bg="yellow"), "function": yBLTPC, "arg1": currentcolors},
+        {"button": Button(root, text="Bottom Left 3 Pyramid Counter", bg="yellow"), "function": yBLTPCU, "arg1": currentcolors},
         {"button": Button(root, text="Bottom Right 5 Pyramid Clock", bg="yellow"), "function": yBRFPC, "arg1": currentcolors},
         {"button": Button(root, text="Bottom Right 5 Pyramid Counter", bg="yellow"), "function": yBRFPCU, "arg1": currentcolors},
-        {"button": Button(root, text="Bottom Right 2 Pyramid Clock", bg="yellow"), "function": yBRTPC, "arg1": currentcolors},
-        {"button": Button(root, text="Bottom Right 2 Pyramid Counter", bg="yellow"), "function": yBRTPCU, "arg1": currentcolors},
+        {"button": Button(root, text="Bottom Right 3 Pyramid Clock", bg="yellow"), "function": yBRTPC, "arg1": currentcolors},
+        {"button": Button(root, text="Bottom Right 3 Pyramid Counter", bg="yellow"), "function": yBRTPCU, "arg1": currentcolors},
 
         {"button": Button(root, text="Red Green Blue Corner Clock", bg="blue"), "function": rgbCC, "arg1": currentcolors},
         {"button": Button(root, text="Red Green Blue Corner Counter", bg="blue"), "function": rgbCCU, "arg1": currentcolors},
@@ -110,8 +259,6 @@ def reset():
         yval = yval + 30
     updateGui()
 
-
-
 #To save processing power, add ability to toggle on/off updating of the graphics
 def toggle_func():
     global flag
@@ -123,7 +270,6 @@ def toggle_func():
     else:
         toggleButton.config(bg="gray")
         flag = 2
-        #canvas.delete(toggleText)
         updateGui()
 
 def counterClockToggle_func():
@@ -160,9 +306,6 @@ def triangle_upsidedown(x,y):
     y3 = y2
     return [x1,y1, x2,y2, x3,y3]
 
-    startingcolors = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]
-    currentcolors = startingcolors
-
 def update_current_button(button_info):
     global current_button_info
     current_button_info = button_info
@@ -175,14 +318,6 @@ def solved(a, b):
 
 #GUI for creating the faces of the Pyraminx, Peer work that was heavily tweaked by Author
 def updateGui():
-    if solved([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3], currentcolors):
-        global solvedText
-        solvedText = canvas.create_text(300, 50, text="SOLVED!!!", fill="black", font=('Helvetica 15 bold'))
-        global isSolved
-        isSolved = True
-    else:
-        canvas.itemconfig(solvedText, text= "")
-
 
 
     #Is toggle flag on
@@ -192,6 +327,13 @@ def updateGui():
 
 
     canvas.delete("all")
+
+    solvedText = canvas.create_text(300, 50, text="Currently Solved!", fill="black", font=('Helvetica 15 bold'))
+    if solved(startingcopy, currentcolors):
+        solvedText = canvas.create_text(300, 50, text="Currently Solved!", fill="black", font=('Helvetica 15 bold'))
+    else:
+        canvas.itemconfig(solvedText, text= "")
+
 
 
     #1 Red
@@ -324,6 +466,7 @@ def rTopClock(pcolors):
     pcolors[48] = pcolors[32]
     pcolors[32] = tempcolor
     updateGui()
+    return pcolors
 
 def rTopCounterClock(pcolors):
     tempcolor = pcolors[0]
@@ -331,6 +474,7 @@ def rTopCounterClock(pcolors):
     pcolors[32] = pcolors[48]
     pcolors[48] = tempcolor
     updateGui()
+    return pcolors
 
 def rSecondClock(pcolors):
     tempcolor1 = pcolors[1]
@@ -349,6 +493,7 @@ def rSecondClock(pcolors):
     pcolors[34] = tempcolor2
     pcolors[35] = tempcolor3
     updateGui()
+    return pcolors
 
 def rSecondCounterClock(pcolors):
     tempcolor1 = pcolors[1]
@@ -367,6 +512,7 @@ def rSecondCounterClock(pcolors):
     pcolors[50] = tempcolor2
     pcolors[51] = tempcolor3
     updateGui()
+    return pcolors
 
 def rThirdClock(pcolors):
     tempcolor1 = pcolors[4]
@@ -393,6 +539,7 @@ def rThirdClock(pcolors):
     pcolors[39] = tempcolor4
     pcolors[40] = tempcolor5
     updateGui()
+    return pcolors
 
 def rThirdCounterClock(pcolors):
     tempcolor1 = pcolors[4]
@@ -419,6 +566,7 @@ def rThirdCounterClock(pcolors):
     pcolors[55] = tempcolor4
     pcolors[56] = tempcolor5
     updateGui()
+    return pcolors
 
 def rBottomClock(pcolors):
 
@@ -496,8 +644,8 @@ def rBottomClock(pcolors):
     pcolors[29] = tempcolor19
     pcolors[30] = tempcolor18
     pcolors[31] = tempcolor16
-
     updateGui()
+    return pcolors
 
 def rBottomCounterClock(pcolors):
 
@@ -576,6 +724,7 @@ def rBottomCounterClock(pcolors):
     pcolors[30] = tempcolor26
     pcolors[31] = tempcolor25
     updateGui()
+    return pcolors
 
 #Blues
 def bTopClock(pcolors):
@@ -651,6 +800,7 @@ def bTopClock(pcolors):
     pcolors[50] = tempcolor30
     pcolors[48] = tempcolor31
     updateGui()
+    return pcolors
 
 def bTopCounterClock(pcolors):
 
@@ -726,6 +876,7 @@ def bTopCounterClock(pcolors):
     pcolors[46] = tempcolor30
     pcolors[47] = tempcolor31
     updateGui()
+    return pcolors
 
 def bSecondClock(pcolors):
     #For traditional blue
@@ -767,6 +918,7 @@ def bSecondClock(pcolors):
     pcolors[23] = tempcolor53
     pcolors[24] = tempcolor52
     updateGui()
+    return pcolors
 
 def bSecondCounterClock(pcolors):
     #For traditional blue
@@ -808,6 +960,7 @@ def bSecondCounterClock(pcolors):
     pcolors[23] = tempcolor37
     pcolors[24] = tempcolor36
     updateGui()
+    return pcolors
 
 def bThirdClock(pcolors):
     #I'm trying to go back to some sort of efficiency here
@@ -827,6 +980,7 @@ def bThirdClock(pcolors):
     pcolors[34] = tempcolor18
     pcolors[33] = tempcolor19
     updateGui()
+    return pcolors
 
 def bThirdCounterClock(pcolors):
     tempcolor17 = pcolors[17]
@@ -845,6 +999,7 @@ def bThirdCounterClock(pcolors):
     pcolors[50] = tempcolor18
     pcolors[49] = tempcolor19
     updateGui()
+    return pcolors
 
 def bBottomClock(pcolors):
     tempcolor16 = pcolors[16]
@@ -852,6 +1007,7 @@ def bBottomClock(pcolors):
     pcolors[48] = pcolors[32]
     pcolors[32] = tempcolor16
     updateGui()
+    return pcolors
 
 def bBottomCounterClock(pcolors):
     tempcolor16 = pcolors[16]
@@ -859,6 +1015,7 @@ def bBottomCounterClock(pcolors):
     pcolors[32] = pcolors[48]
     pcolors[48] = tempcolor16
     updateGui()
+    return pcolors
 
 def gTopClock(pcolors):
     tempcolor = pcolors[0]
@@ -866,6 +1023,7 @@ def gTopClock(pcolors):
     pcolors[48] = pcolors[32]
     pcolors[32] = tempcolor
     updateGui()
+    return pcolors
 
 def gTopCounterClock(pcolors):
     tempcolor = pcolors[0]
@@ -873,6 +1031,7 @@ def gTopCounterClock(pcolors):
     pcolors[32] = pcolors[48]
     pcolors[48] = tempcolor
     updateGui()
+    return pcolors
 
 def gSecondClock(pcolors):
     tempcolor1 = pcolors[1]
@@ -891,6 +1050,7 @@ def gSecondClock(pcolors):
     pcolors[34] = tempcolor2
     pcolors[35] = tempcolor3
     updateGui()
+    return pcolors
 
 def gSecondCounterClock(pcolors):
     tempcolor1 = pcolors[1]
@@ -909,6 +1069,7 @@ def gSecondCounterClock(pcolors):
     pcolors[50] = tempcolor2
     pcolors[51] = tempcolor3
     updateGui()
+    return pcolors
 
 def gThirdClock(pcolors):
     tempcolor1 = pcolors[4]
@@ -935,6 +1096,7 @@ def gThirdClock(pcolors):
     pcolors[39] = tempcolor4
     pcolors[40] = tempcolor5
     updateGui()
+    return pcolors
 
 def gThirdCounterClock(pcolors):
     tempcolor1 = pcolors[4]
@@ -961,6 +1123,7 @@ def gThirdCounterClock(pcolors):
     pcolors[55] = tempcolor4
     pcolors[56] = tempcolor5
     updateGui()
+    return pcolors
 
 def gBottomClock(pcolors):
     #handle the red, yellow, green
@@ -1038,6 +1201,7 @@ def gBottomClock(pcolors):
     pcolors[30] = tempcolor18
     pcolors[31] = tempcolor16
     updateGui()
+    return pcolors
 
 def gBottomCounterClock(pcolors):
      #handle the red, yellow, green
@@ -1115,6 +1279,7 @@ def gBottomCounterClock(pcolors):
     pcolors[30] = tempcolor26
     pcolors[31] = tempcolor25
     updateGui()
+    return pcolors
 
 def yTopClock(pcolors):
     tempcolor = pcolors[0]
@@ -1122,6 +1287,7 @@ def yTopClock(pcolors):
     pcolors[48] = pcolors[32]
     pcolors[32] = tempcolor
     updateGui()
+    return pcolors
 
 def yTopCounterClock(pcolors):
     tempcolor = pcolors[0]
@@ -1129,6 +1295,7 @@ def yTopCounterClock(pcolors):
     pcolors[32] = pcolors[48]
     pcolors[48] = tempcolor
     updateGui()
+    return pcolors
 
 def ySecondClock(pcolors):
     tempcolor1 = pcolors[1]
@@ -1147,6 +1314,7 @@ def ySecondClock(pcolors):
     pcolors[34] = tempcolor2
     pcolors[35] = tempcolor3
     updateGui()
+    return pcolors
 
 def ySecondCounterClock(pcolors):
     tempcolor1 = pcolors[1]
@@ -1165,6 +1333,7 @@ def ySecondCounterClock(pcolors):
     pcolors[50] = tempcolor2
     pcolors[51] = tempcolor3
     updateGui()
+    return pcolors
 
 def yThirdClock(pcolors):
     tempcolor1 = pcolors[4]
@@ -1191,6 +1360,7 @@ def yThirdClock(pcolors):
     pcolors[39] = tempcolor4
     pcolors[40] = tempcolor5
     updateGui()
+    return pcolors
 
 def yThirdCounterClock(pcolors):
     tempcolor1 = pcolors[4]
@@ -1217,6 +1387,7 @@ def yThirdCounterClock(pcolors):
     pcolors[55] = tempcolor4
     pcolors[56] = tempcolor5
     updateGui()
+    return pcolors
 
 def yBottomClock(pcolors):
     #handle the red, yellow, green
@@ -1294,6 +1465,7 @@ def yBottomClock(pcolors):
     pcolors[30] = tempcolor18
     pcolors[31] = tempcolor16
     updateGui()
+    return pcolors
 
 def yBottomCounterClock(pcolors):
      #handle the red, yellow, green
@@ -1371,6 +1543,7 @@ def yBottomCounterClock(pcolors):
     pcolors[30] = tempcolor26
     pcolors[31] = tempcolor25
     updateGui()
+    return pcolors
 
 
 #Below here is the nightmare that is the pyramidal turns
@@ -1418,6 +1591,7 @@ def yBLFPC(pcolors):
     pcolors[55] = tempcolor44
     pcolors[51] = tempcolor45
     updateGui()
+    return pcolors
 
 #This is the same as the gBRFPC
 def yBLFPCU(pcolors):
@@ -1461,6 +1635,7 @@ def yBLFPCU(pcolors):
     pcolors[21] = tempcolor44
     pcolors[17] = tempcolor45
     updateGui()
+    return pcolors
 
 #This is the same as the gBRTPCU
 def yBLTPC(pcolors):
@@ -1484,6 +1659,7 @@ def yBLTPC(pcolors):
     pcolors[62] = tempcolor42
     pcolors[56] = tempcolor43
     updateGui()
+    return pcolors
 
 #This is the same as the gBRTPC
 def yBLTPCU(pcolors):
@@ -1507,6 +1683,7 @@ def yBLTPCU(pcolors):
     pcolors[26] = tempcolor42
     pcolors[20] = tempcolor43
     updateGui()
+    return pcolors
 
 #The same as rBLFPCU
 def yBRFPC(pcolors):
@@ -1550,6 +1727,7 @@ def yBRFPC(pcolors):
     pcolors[21] = tempcolor12
     pcolors[17] = tempcolor13
     updateGui()
+    return pcolors
 
 #The same as rBLFPC
 def yBRFPCU(pcolors):
@@ -1593,6 +1771,7 @@ def yBRFPCU(pcolors):
     pcolors[39] = tempcolor12
     pcolors[35] = tempcolor13
     updateGui()
+    return pcolors
 
 #The same as rBLTPCU
 def yBRTPC(pcolors):
@@ -1616,6 +1795,7 @@ def yBRTPC(pcolors):
     pcolors[26] = tempcolor10
     pcolors[20] = tempcolor11
     updateGui()
+    return pcolors
 
 #The same as rBLTPC
 def yBRTPCU(pcolors):
@@ -1639,6 +1819,7 @@ def yBRTPCU(pcolors):
     pcolors[46] = tempcolor10
     pcolors[40] = tempcolor11
     updateGui()
+    return pcolors
 
 #The same as rBRFPCU
 def gBLFPC(pcolors):
@@ -1682,6 +1863,7 @@ def gBLFPC(pcolors):
     pcolors[30] = tempcolor14
     pcolors[31] = tempcolor15
     updateGui()
+    return pcolors
 
 #The same as rBRFPC
 def gBLFPCU(pcolors):
@@ -1725,6 +1907,7 @@ def gBLFPCU(pcolors):
     pcolors[58] = tempcolor14
     pcolors[57] = tempcolor15
     updateGui()
+    return pcolors
 
 #The same as rBRTPCU
 def gBLTPC(pcolors):
@@ -1748,6 +1931,7 @@ def gBLTPC(pcolors):
     pcolors[30] = tempcolor14
     pcolors[31] = tempcolor15
     updateGui()
+    return pcolors
 
 #The same as rBRTPC
 def gBLTPCU(pcolors):
@@ -1771,6 +1955,7 @@ def gBLTPCU(pcolors):
     pcolors[58] = tepmcolor14
     pcolors[57] = tempcolor15
     updateGui()
+    return pcolors
 
 def gBRFPC(pcolors):
     tempcolor33 = pcolors[33]
@@ -1813,6 +1998,7 @@ def gBRFPC(pcolors):
     pcolors[21] = tempcolor44
     pcolors[17] = tempcolor45
     updateGui()
+    return pcolors
 
 def gBRFPCU(pcolors):
     tempcolor33 = pcolors[33]
@@ -1855,6 +2041,7 @@ def gBRFPCU(pcolors):
     pcolors[55] = tempcolor44
     pcolors[51] = tempcolor45
     updateGui()
+    return pcolors
 
 def gBRTPC(pcolors):
     tempcolor36 = pcolors[36]
@@ -1877,6 +2064,7 @@ def gBRTPC(pcolors):
     pcolors[26] = tempcolor42
     pcolors[20] = tempcolor43
     updateGui()
+    return pcolors
 
 def gBRTPCU(pcolors):
     tempcolor36 = pcolors[36]
@@ -1899,6 +2087,7 @@ def gBRTPCU(pcolors):
     pcolors[62] = tempcolor42
     pcolors[56] = tempcolor43
     updateGui()
+    return pcolors
 
 def rBLFPC(pcolors):
     tempcolor1 = pcolors[1]
@@ -1941,6 +2130,7 @@ def rBLFPC(pcolors):
     pcolors[39] = tempcolor12
     pcolors[35] = tempcolor13
     updateGui()
+    return pcolors
 
 def rBLFPCU(pcolors):
     tempcolor1 = pcolors[1]
@@ -1983,6 +2173,7 @@ def rBLFPCU(pcolors):
     pcolors[21] = tempcolor12
     pcolors[17] = tempcolor13
     updateGui()
+    return pcolors
 
 def rBLTPC(pcolors):
     tempcolor4 = pcolors[4]
@@ -2005,6 +2196,7 @@ def rBLTPC(pcolors):
     pcolors[46] = tempcolor10
     pcolors[40] = tempcolor11
     updateGui()
+    return pcolors
 
 def rBLTPCU(pcolors):
     tempcolor4 = pcolors[4]
@@ -2027,6 +2219,7 @@ def rBLTPCU(pcolors):
     pcolors[26] = tempcolor10
     pcolors[20] = tempcolor11
     updateGui()
+    return pcolors
 
 def rBRFPC(pcolors):
     tempcolor3 = pcolors[3]
@@ -2068,8 +2261,8 @@ def rBRFPC(pcolors):
     pcolors[52] = tempcolor13
     pcolors[58] = tempcolor14
     pcolors[57] = tempcolor15
-
     updateGui()
+    return pcolors
 
 def rBRFPCU(pcolors):
     tempcolor3 = pcolors[3]
@@ -2112,6 +2305,7 @@ def rBRFPCU(pcolors):
     pcolors[30] = tempcolor14
     pcolors[31] = tempcolor15
     updateGui()
+    return pcolors
 
 def rBRTPC(pcolors):
     tempcolor8 = pcolors[8]
@@ -2134,6 +2328,7 @@ def rBRTPC(pcolors):
     pcolors[58] = tepmcolor14
     pcolors[57] = tempcolor15
     updateGui()
+    return pcolors
 
 def rBRTPCU(pcolors):
     tempcolor8 = pcolors[8]
@@ -2156,6 +2351,7 @@ def rBRTPCU(pcolors):
     pcolors[30] = tempcolor14
     pcolors[31] = tempcolor15
     updateGui()
+    return pcolors
 
 def rgbCC(pcolors):
     tempcolor9 = pcolors[9]
@@ -2163,6 +2359,7 @@ def rgbCC(pcolors):
     pcolors[25] = pcolors[63]
     pcolors[63] = tempcolor9
     updateGui()
+    return pcolors
 
 def rgbCCU(pcolors):
     tempcolor9 = pcolors[9]
@@ -2170,6 +2367,7 @@ def rgbCCU(pcolors):
     pcolors[63] = pcolors[25]
     pcolors[25] = tempcolor9
     updateGui()
+    return pcolors
 
 def rybCC(pcolors):
     tempcolor15 = pcolors[15]
@@ -2177,6 +2375,7 @@ def rybCC(pcolors):
     pcolors[31] = pcolors[41]
     pcolors[41] = tempcolor15
     updateGui()
+    return pcolors
 
 def rybCCU(pcolors):
     tempcolor15 = pcolors[15]
@@ -2184,6 +2383,7 @@ def rybCCU(pcolors):
     pcolors[41] = pcolors[31]
     pcolors[31] = tempcolor15
     updateGui()
+    return pcolors
 
 #There are 28 different nonredundant moves in this program.
 #Written by Author, not Peer
@@ -2197,11 +2397,9 @@ def randompyraminx(moves):
     if (counterClockToggle == 1):
         lowerBound = 14
         upperBound = 27
-        print("counteronly")
     elif (counterClockToggle == 2):
         lowerBound = 0
         upperBound = 13
-        print("clockonly")
 
     for i in range(moves):
         move = random.randint(lowerBound, upperBound)
@@ -2271,7 +2469,14 @@ canvas = Canvas(root, width=1500, height=1000)
 colors = ["red", "blue", "yellow", "green", "black"]
 canvas.pack()
 
+
+
 reset()
+
+
+#solved
+#solvedText = canvas.create_text(300, 50, text="Currently Solved!", fill="black", font=('Helvetica 15 bold'))
+
 
 #Randomize button and user entry
 button = Button(root, text="Randomize", command=randomizer_func, bg = 'grey')
@@ -2287,6 +2492,10 @@ toggleButton.place(x = 150, y = 765)
 counterClockToggleButton = Button(root, text = "All Moves Possible", command = counterClockToggle_func, bg = 'gray')
 counterClockToggleButton.place(x = 400, y = 765)
 counterClockToggleText = canvas.create_text(455, 750, text="A* Moveset", fill="black", font=('Helvetica 15 bold'))
+
+#Button to start A* search
+searchButton = Button(root, text="Solve Using A*", command=lambda: astar(currentcolors, startingcopy), bg='gray')
+searchButton.place(x = 800, y = 765)
 root.mainloop()
 
 
