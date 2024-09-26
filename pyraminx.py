@@ -22,7 +22,7 @@ class Node():
         self.parent = parent
         self.configuration = configuration
         self.g = 0  # Distance from start to current node
-        self.h = 0  # Heuristic cost to the goal
+        self.h = 0  # Heuristic cost to goal
         self.f = 0  # Total cost (g + h)
 
 
@@ -38,12 +38,12 @@ def findHeuristic(startPyramid):
         return 1
 
 def astar(startPyramid, endPyramid):
+
+    #initialize start and end nodes
     startNode = Node(None, startPyramid)
     startNode.configuration = startPyramid
     startNode.g = startNode.f = 0
     startNode.h = findHeuristic(startPyramid)
-
-
     endNode = Node(None, endPyramid)
     endNode.g = endNode.h = endNode.f = 0
 
@@ -56,7 +56,6 @@ def astar(startPyramid, endPyramid):
 
     heappush(heap, startNode)
     heapify(heap)
-
 
     while (heap):
         currentNode = heap[0]
@@ -73,11 +72,11 @@ def astar(startPyramid, endPyramid):
         heapq.heappop(heap)
         closedList.append(currentNode)
 
+        #Check to see if current node is solved pyraminx
         if solved(currentNode.configuration, endPyramid):
             print("Solved!!!")
             global currentcolors
             currentcolors = currentNode.configuration
-
             global flag
             if (flag == 1):
                 toggle_func()
@@ -96,12 +95,10 @@ def astar(startPyramid, endPyramid):
             child.f = child.g + child.h
 
 
-
             if any(node.configuration == child.configuration for node in closedList):
                 continue
 
             heapq.heappush(heap,child)
-
         heapify(heap)
 
 
@@ -151,10 +148,10 @@ def fetchPossibleMoves():
     if (counterClockToggle == 0):
         for i in range(28):
             possibleMoves.append(totalMoves[i])
-    elif (counterClockToggle == 1):
+    elif (counterClockToggle == 2):
         for i in range(14,28):
             possibleMoves.append(totalMoves[i])
-    elif (counterClockToggle == 2):
+    elif (counterClockToggle == 1):
         for i in range(15):
             possibleMoves.append(totalMoves[i])
 
