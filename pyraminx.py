@@ -5,38 +5,35 @@ import heapq
 from heapq import heapify, heappush
 import copy
 
-#For confidentiality reasons that were mentioned by Dr. Goldsmith,
+#For confidentiality reasons that were mentioned by ,my professor
 #I the author was warned not to put my name in this code.
 #Therefore, I will refer to myself as the author and the friend who wrote the basics of the GUI as the Peer.
 #From hereon, Peer code will be designated as such, and otherwise the code will be mine as the Author.
 
-flag = 0
-counterClockToggle = 0
+flag = 0    #GUI toggle
+counterClockToggle = 0  #A* search toggle
 startingcolors = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]
 startingcopy = startingcolors
 
 
-
+#Holds node data for A*
 class Node():
     def __init__(self, parent = None, configuration = None):
         self.parent = parent
-        self.configuration = configuration
-        self.g = 0  # Distance from start to current node
-        self.h = 0  # Heuristic cost to goal
-        self.f = 0  # Total cost (g + h)
+        self.configuration = configuration #Configuration of pyraminx
+        self.g = 0  #Distance from start to current node
+        self.h = 0  #Heuristic cost to goal
+        self.f = 0  #Total cost (g + h)
 
-
-    def __eq__(self, other):
-        return self.configuration == other.configuration
-
-
+    #Allow heap to compare nodes based on f value
     def __lt__(self, other):
         return self.f < other.f
 
-
+#TODO: Add heuristic that not just 1
 def findHeuristic(startPyramid):
         return 1
 
+#A* search algorithm, called by searchButton
 def astar(startPyramid, endPyramid):
 
     #initialize start and end nodes
@@ -47,42 +44,37 @@ def astar(startPyramid, endPyramid):
     endNode = Node(None, endPyramid)
     endNode.g = endNode.h = endNode.f = 0
 
-    #open list that I am storing as a prio queue min heap
-    #Storing nodes that have yet to be reached
-    heap = []
+    heap = [] #Store nodes that have not been visited.
+    closedList = [] #store visited nodes
 
-    #Closed list to store visited nodes
-    closedList = []
-
+    #Create heap queue with start node
     heappush(heap, startNode)
     heapify(heap)
 
+    incrementer = 0
     while (heap):
+
+        #Pick lowest f value
         currentNode = heap[0]
         if currentNode.configuration is None:
             print("Error: currentNode.config at top is None!")
 
+        heapq.heappop(heap)             #Acknowledge we're visiting this node
+        closedList.append(currentNode)  #Add node to visited nodes
 
-
-        for entry in heap:
-            if entry.f < currentNode.f:
-                currentNode = entry
-
-
-        heapq.heappop(heap)
-        closedList.append(currentNode)
-
-        #Check to see if current node is solved pyraminx
+        incrementer += 1
+        #Check to see if current node is our solved pyraminx
         if solved(currentNode.configuration, endPyramid):
             print("Solved!!!")
+            print("Nodes searched: ", incrementer)
             global currentcolors
             currentcolors = currentNode.configuration
             global flag
-            if (flag == 1):
+            if (flag == 1):     #Unflip GUI toggle for user QOL
                 toggle_func()
             updateGui()
 
-            #Print path to the terminal
+            #Print optimal path
             path = []
             current = currentNode
             while current is not None:
@@ -90,43 +82,40 @@ def astar(startPyramid, endPyramid):
                 current = current.parent
             for i, config in enumerate(reversed(path)):
                 print(f"Step {i + 1}: {config}")
-
-
-
             break
 
+        #Determine what moves can be done to this configuration
         possibleMoves = fetchPossibleMoves()
 
+        #Create a child node for each possible move on a configuration
         for move in possibleMoves:
-            currentNodeClone = copy.deepcopy(currentNode)
-            newConfiguration = applyMoves(currentNodeClone.configuration, move)
 
-            child = Node(parent = currentNode, configuration = newConfiguration)
+            currentNodeClone = copy.deepcopy(currentNode)       #Without deep copy, modifiying currentNodeClone also modified currentNode
+            currentNodeClone.configuration = applyMoves(currentNodeClone.configuration, move)
+            child = Node(parent = currentNode, configuration = currentNodeClone.configuration)
             child.g = currentNode.g + 1
             child.h = findHeuristic(child.configuration)
             child.f = child.g + child.h
 
-
+            #If a child has been visited, don't bother
             if any(node.configuration == child.configuration for node in closedList):
                 continue
-
             heapq.heappush(heap,child)
-        heapify(heap)
 
+        heapify(heap)   #Reorganize heap once new children added
 
+#Applies moves on a configuration to produce children (A*)
 def applyMoves(configuration, move):
-    configurationClone = configuration
-    if configurationClone is None:
-        print("Error: pcolors is None!")
-    newConfiguration = move(configurationClone)
+    newConfiguration = move(configuration)
     return newConfiguration
 
-
+#Returns a list of moves that can be applied to a configuration (A*)
 def fetchPossibleMoves():
     global counterClockToggle
     possibleMoves = []
     totalMoves = []
 
+    #List of unique moves, ordered by orientation
     totalMoves.append(rTopClock)
     totalMoves.append(rSecondClock)
     totalMoves.append(rThirdClock)
@@ -157,6 +146,8 @@ def fetchPossibleMoves():
     totalMoves.append(yBLFPCU)
     totalMoves.append(yBLTPCU)
 
+    #To see if user wants to do clock or counterclock wise only moves to save performance
+    #0-14 is clockwise, 14-27 is counter
     if (counterClockToggle == 0):
         for i in range(28):
             possibleMoves.append(totalMoves[i])
@@ -168,7 +159,6 @@ def fetchPossibleMoves():
             possibleMoves.append(totalMoves[i])
 
     return possibleMoves
-
 
 #GUI code is from peer, not from author
 def reset():
@@ -268,22 +258,26 @@ def reset():
         yval = yval + 30
     updateGui()
 
-#To save processing power, add ability to toggle on/off updating of the graphics
+#To save processing power, toggle on/off updating of the graphics
 def toggle_func():
     global flag
     global toggleButton, toggleText
+
+    #0 and 2 are off, 1 is on. Set to 0 at runtime, 2 o/w
     if ((flag == 0) or (flag == 2)):
         flag = 1
-        toggleText = canvas.create_text(206, 750, text="Toggle is On", fill="black", font=('Helvetica 15 bold'))
+        toggleText = canvas.create_text(206, 750, text="Performance Mode", fill="black", font=('Helvetica 15 bold'))
         toggleButton.config(bg="green")
     else:
         toggleButton.config(bg="gray")
         flag = 2
         updateGui()
 
+#To save processing power, scramble and solve based on (counter or) clockwise moves
 def counterClockToggle_func():
     global counterClockToggle
 
+    #0 is all moves, 1 is counterclockwise, 2 is clockwise
     if (counterClockToggle == 0):
         counterClockToggle = 1
         counterClockToggleButton.config(bg="blue", text = "Counter Moves Only")
@@ -294,6 +288,87 @@ def counterClockToggle_func():
         counterClockToggle = 0
         counterClockToggleButton.config(bg="gray", text = "All Moves Possible")
 
+#Peer code that takes user input for randomizer
+def randomizer_func():
+    entry_text = entry.get()
+    if entry_text.isdigit():
+        randompyraminx(int(entry_text))
+
+#There are 28 different nonredundant moves in this program.
+#Written by Author, not Peer
+def randompyraminx(moves):
+    if moves == 0:
+        reset()
+
+    lowerBound = 0
+    upperBound = 27
+
+    if (counterClockToggle == 1):
+        lowerBound = 14
+        upperBound = 27
+    elif (counterClockToggle == 2):
+        lowerBound = 0
+        upperBound = 13
+
+    for i in range(moves):
+        move = random.randint(lowerBound, upperBound)
+        match move:
+            case 0:
+                rTopClock(currentcolors)
+            case 1:
+                rSecondClock(currentcolors)
+            case 2:
+                rThirdClock(currentcolors)
+            case 3:
+                rBottomClock(currentcolors)
+            case 4:
+                bTopClock(currentcolors)
+            case 5:
+                bSecondClock(currentcolors)
+            case 6:
+                bThirdClock(currentcolors)
+            case 7:
+                bBottomClock(currentcolors)
+            case 8:
+                rBLFPC(currentcolors)
+            case 9:
+                rBLTPC(currentcolors)
+            case 10:
+                rBRFPC(currentcolors)
+            case 11:
+                rBRTPC(currentcolors)
+            case 12:
+                yBLFPC(currentcolors)
+            case 13:
+                yBLTPC(currentcolors)
+            case 14:
+                rTopCounterClock(currentcolors)
+            case 15:
+                rSecondCounterClock(currentcolors)
+            case 16:
+                rThirdCounterClock(currentcolors)
+            case 17:
+                rBottomCounterClock(currentcolors)
+            case 18:
+                bTopCounterClock(currentcolors)
+            case 19:
+                bSecondCounterClock(currentcolors)
+            case 20:
+                bThirdCounterClock(currentcolors)
+            case 21:
+                bBottomCounterClock(currentcolors)
+            case 22:
+                rBLFPCU(currentcolors)
+            case 23:
+                rBLTPCU(currentcolors)
+            case 24:
+                rBRFPCU(currentcolors)
+            case 25:
+                rBRTPCU(currentcolors)
+            case 26:
+                yBLFPCU(currentcolors)
+            case 27:
+                yBLTPCU(currentcolors)
 
 #As this function and the next 3 below it are GUI,
 #these were wrote by the peer and not the author
@@ -319,6 +394,7 @@ def update_current_button(button_info):
     global current_button_info
     current_button_info = button_info
 
+#Check if node current configuration is solved. Also works for A*
 def solved(a, b):
     for i in range(63):
         if a[i] != b[i]:
@@ -460,12 +536,6 @@ def updateGui():
     #Reprint counterClockToggle because it was getting deleted by my canvas clear at the top of this function
     global counterClockToggleText
     counterClockToggleText = canvas.create_text(455, 750, text="A* Moveset", fill="black", font=('Helvetica 15 bold'))
-
-#Peer code that takes user input for randomizer
-def randomizer_func():
-    entry_text = entry.get()
-    if entry_text.isdigit():
-        randompyraminx(int(entry_text))
 
 #Below is nearly 2000 lines that handle pyraminx rotations
 #Using naming convention devised by peer. Written by author
@@ -2394,81 +2464,7 @@ def rybCCU(pcolors):
     updateGui()
     return pcolors
 
-#There are 28 different nonredundant moves in this program.
-#Written by Author, not Peer
-def randompyraminx(moves):
-    if moves == 0:
-        reset()
 
-    lowerBound = 0
-    upperBound = 27
-
-    if (counterClockToggle == 1):
-        lowerBound = 14
-        upperBound = 27
-    elif (counterClockToggle == 2):
-        lowerBound = 0
-        upperBound = 13
-
-    for i in range(moves):
-        move = random.randint(lowerBound, upperBound)
-        match move:
-            case 0:
-                rTopClock(currentcolors)
-            case 1:
-                rSecondClock(currentcolors)
-            case 2:
-                rThirdClock(currentcolors)
-            case 3:
-                rBottomClock(currentcolors)
-            case 4:
-                bTopClock(currentcolors)
-            case 5:
-                bSecondClock(currentcolors)
-            case 6:
-                bThirdClock(currentcolors)
-            case 7:
-                bBottomClock(currentcolors)
-            case 8:
-                rBLFPC(currentcolors)
-            case 9:
-                rBLTPC(currentcolors)
-            case 10:
-                rBRFPC(currentcolors)
-            case 11:
-                rBRTPC(currentcolors)
-            case 12:
-                yBLFPC(currentcolors)
-            case 13:
-                yBLTPC(currentcolors)
-            case 14:
-                rTopCounterClock(currentcolors)
-            case 15:
-                rSecondCounterClock(currentcolors)
-            case 16:
-                rThirdCounterClock(currentcolors)
-            case 17:
-                rBottomCounterClock(currentcolors)
-            case 18:
-                bTopCounterClock(currentcolors)
-            case 19:
-                bSecondCounterClock(currentcolors)
-            case 20:
-                bThirdCounterClock(currentcolors)
-            case 21:
-                bBottomCounterClock(currentcolors)
-            case 22:
-                rBLFPCU(currentcolors)
-            case 23:
-                rBLTPCU(currentcolors)
-            case 24:
-                rBRFPCU(currentcolors)
-            case 25:
-                rBRTPCU(currentcolors)
-            case 26:
-                yBLFPCU(currentcolors)
-            case 27:
-                yBLTPCU(currentcolors)
 
 
 #MAIN (GUI Code wrote by Peer, with tweaks by Author)
@@ -2478,14 +2474,7 @@ canvas = Canvas(root, width=1500, height=1000)
 colors = ["red", "blue", "yellow", "green", "black"]
 canvas.pack()
 
-
-
 reset()
-
-
-#solved
-#solvedText = canvas.create_text(300, 50, text="Currently Solved!", fill="black", font=('Helvetica 15 bold'))
-
 
 #Randomize button and user entry
 button = Button(root, text="Randomize", command=randomizer_func, bg = 'grey')
