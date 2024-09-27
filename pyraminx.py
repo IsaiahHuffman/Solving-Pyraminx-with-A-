@@ -4,16 +4,14 @@ import random
 import heapq
 from heapq import heapify, heappush
 import copy
+import time
 
-#For confidentiality reasons that were mentioned by ,my professor
+#For confidentiality reasons that were mentioned by my professor
 #I the author was warned not to put my name in this code.
 #Therefore, I will refer to myself as the author and the friend who wrote the basics of the GUI as the Peer.
 #From hereon, Peer code will be designated as such, and otherwise the code will be mine as the Author.
 
-flag = 0    #GUI toggle
-counterClockToggle = 0  #A* search toggle
-startingcolors = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]
-startingcopy = startingcolors
+
 
 
 #Holds node data for A*
@@ -29,9 +27,25 @@ class Node():
     def __lt__(self, other):
         return self.f < other.f
 
-#TODO: Add heuristic that not just 1
-def findHeuristic(startPyramid):
-        return 1
+#Heuristic function for A*
+#Returns max number of wrong colors on pyraminx faces, minus one
+#which incentives A* to minimize incorrect colors on all pyraminx faces
+def findHeuristic(configuration):
+
+        #This takes advantage of how a set will delete extra elements if they are identical
+        #Given that a color is represented by a number, e.g. red is 0 and blue is 1
+        #If a side of a pyraminx is a mix of two colors, len(slice) is 2
+        #Return the worst case number of incorrect colors on any given face, minus one
+        a = 0
+        b = 16
+        maxHolder = 0
+        for j in range(4):
+            slice = set(configuration[a:b]) #Slice off one side of pyraminx
+            maxHolder = max(maxHolder, len(slice))
+            a += 16
+            b += 16
+
+        return maxHolder - 1
 
 #A* search algorithm, called by searchButton
 def astar(startPyramid, endPyramid):
@@ -46,6 +60,8 @@ def astar(startPyramid, endPyramid):
 
     heap = [] #Store nodes that have not been visited.
     closedList = [] #store visited nodes
+
+    timeHolderBegin = time.perf_counter() #Calculate time of A* search
 
     #Create heap queue with start node
     heappush(heap, startNode)
@@ -67,6 +83,8 @@ def astar(startPyramid, endPyramid):
         if solved(currentNode.configuration, endPyramid):
             print("Solved!!!")
             print("Nodes searched: ", incrementer)
+            timeHolderEnd = time.perf_counter()
+            print(f"Time taken: {timeHolderEnd - timeHolderBegin:0.4f} seconds")
             global currentcolors
             currentcolors = currentNode.configuration
             global flag
@@ -130,6 +148,8 @@ def fetchPossibleMoves():
     totalMoves.append(rBRTPC)
     totalMoves.append(yBLFPC)
     totalMoves.append(yBLTPC)
+    totalMoves.append(rybCC)
+    totalMoves.append(rgbCC)
 
     totalMoves.append(rTopCounterClock)
     totalMoves.append(rSecondCounterClock)
@@ -145,17 +165,19 @@ def fetchPossibleMoves():
     totalMoves.append(rBRTPCU)
     totalMoves.append(yBLFPCU)
     totalMoves.append(yBLTPCU)
+    totalMoves.append(rybCCU)
+    totalMoves.append(rgbCCU)
 
     #To see if user wants to do clock or counterclock wise only moves to save performance
-    #0-14 is clockwise, 14-27 is counter
+    #0-16 is clockwise, 16-32 is counter
     if (counterClockToggle == 0):
-        for i in range(28):
+        for i in range(32):
             possibleMoves.append(totalMoves[i])
     elif (counterClockToggle == 2):
-        for i in range(14,28):
+        for i in range(16,32):
             possibleMoves.append(totalMoves[i])
     elif (counterClockToggle == 1):
-        for i in range(15):
+        for i in range(16):
             possibleMoves.append(totalMoves[i])
 
     return possibleMoves
@@ -166,7 +188,6 @@ def reset():
     global currentcolors
     startingcolors = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]
     currentcolors = startingcolors
-
     clock_list = [
         {"button": Button(root, text="Top Clock", bg = "red"), "function": rTopClock, "arg1": currentcolors},
         {"button": Button(root, text="Top Counter Clock", bg = "red"), "function": rTopCounterClock, "arg1": currentcolors},
@@ -301,14 +322,14 @@ def randompyraminx(moves):
         reset()
 
     lowerBound = 0
-    upperBound = 27
+    upperBound = 31
 
     if (counterClockToggle == 1):
-        lowerBound = 14
-        upperBound = 27
+        lowerBound = 16
+        upperBound = 31
     elif (counterClockToggle == 2):
         lowerBound = 0
-        upperBound = 13
+        upperBound = 15
 
     for i in range(moves):
         move = random.randint(lowerBound, upperBound)
@@ -342,33 +363,42 @@ def randompyraminx(moves):
             case 13:
                 yBLTPC(currentcolors)
             case 14:
-                rTopCounterClock(currentcolors)
+                rybCC(currentcolors)
             case 15:
-                rSecondCounterClock(currentcolors)
+                rgbCC(currentcolors)
             case 16:
-                rThirdCounterClock(currentcolors)
+                rTopCounterClock(currentcolors)
             case 17:
-                rBottomCounterClock(currentcolors)
+                rSecondCounterClock(currentcolors)
             case 18:
-                bTopCounterClock(currentcolors)
+                rThirdCounterClock(currentcolors)
             case 19:
-                bSecondCounterClock(currentcolors)
+                rBottomCounterClock(currentcolors)
             case 20:
-                bThirdCounterClock(currentcolors)
+                bTopCounterClock(currentcolors)
             case 21:
-                bBottomCounterClock(currentcolors)
+                bSecondCounterClock(currentcolors)
             case 22:
-                rBLFPCU(currentcolors)
+                bThirdCounterClock(currentcolors)
             case 23:
-                rBLTPCU(currentcolors)
+                bBottomCounterClock(currentcolors)
             case 24:
-                rBRFPCU(currentcolors)
+                rBLFPCU(currentcolors)
             case 25:
-                rBRTPCU(currentcolors)
+                rBLTPCU(currentcolors)
             case 26:
-                yBLFPCU(currentcolors)
+                rBRFPCU(currentcolors)
             case 27:
+                rBRTPCU(currentcolors)
+            case 28:
+                yBLFPCU(currentcolors)
+            case 29:
                 yBLTPCU(currentcolors)
+            case 30:
+                rybCCU(currentcolors)
+            case 31:
+                rgbCCU(currentcolors)
+
 
 #As this function and the next 3 below it are GUI,
 #these were wrote by the peer and not the author
@@ -443,9 +473,9 @@ def updateGui():
     canvas.create_polygon(triangle(620, 330), fill=colors[currentcolors[15]], outline = "black")
 
     #debugging tool
-    #canvas.create_text(380, 340, text = "9")
-    #canvas.create_text(620, 340, text = "15")
-    #canvas.create_text(500, 90, text = "0")
+    canvas.create_text(380, 340, text = "9")
+    canvas.create_text(620, 340, text = "15")
+    canvas.create_text(500, 90, text = "0")
     canvas.create_text(500, 80, text="Red", font=("Helvetica", 30, "bold"), fill="red")
 
 
@@ -472,9 +502,9 @@ def updateGui():
     canvas.create_polygon(triangle_upsidedown(620, 430), fill=colors[currentcolors[31]], outline = "black")
 
     #debugging tool
-    #canvas.create_text(500, 620, text = "16")
-    #canvas.create_text(380, 370, text = "25")
-    #canvas.create_text(620, 370, text = "31")
+    canvas.create_text(500, 620, text = "16")
+    canvas.create_text(380, 370, text = "25")
+    canvas.create_text(620, 370, text = "31")
     canvas.create_text(500, 650, text="Blue", font=("Helvetica", 30, "bold"), fill="blue")
 
 
@@ -501,9 +531,9 @@ def updateGui():
     canvas.create_polygon(triangle(280, 330), fill=colors[currentcolors[47]], outline = "black")
 
     #debugging tool
-    #canvas.create_text(160, 90, text = "32")
-    #canvas.create_text(40, 340, text = "41")
-    #canvas.create_text(280, 340, text = "47")
+    canvas.create_text(160, 90, text = "32")
+    canvas.create_text(40, 340, text = "41")
+    canvas.create_text(280, 340, text = "47")
     canvas.create_text(160, 80, text="Yellow", font=("Helvetica", 30, "bold"), fill="Yellow")
 
     #1 Green
@@ -528,9 +558,9 @@ def updateGui():
     canvas.create_polygon(triangle(960, 330), fill=colors[currentcolors[63]], outline = "black")
 
     #debugging tool
-    #canvas.create_text(840, 90, text = "48")
-    #canvas.create_text(720, 340, text = "57")
-    #canvas.create_text(960, 340, text = "63")
+    canvas.create_text(840, 90, text = "48")
+    canvas.create_text(720, 340, text = "57")
+    canvas.create_text(960, 340, text = "63")
     canvas.create_text(840, 80, text="Green", font=("Helvetica", 30, "bold"), fill="green")
 
     #Reprint counterClockToggle because it was getting deleted by my canvas clear at the top of this function
@@ -689,7 +719,6 @@ def rBottomClock(pcolors):
     tempcolor19 = pcolors[19]
     tempcolor20 = pcolors[20]
     tempcolor21 = pcolors[21]
-    tempcolor22 = pcolors[22]
     tempcolor23 = pcolors[23]
     tempcolor24 = pcolors[24]
     tempcolor25 = pcolors[25]
@@ -768,7 +797,6 @@ def rBottomCounterClock(pcolors):
     tempcolor19 = pcolors[19]
     tempcolor20 = pcolors[20]
     tempcolor21 = pcolors[21]
-    tempcolor22 = pcolors[22]
     tempcolor23 = pcolors[23]
     tempcolor24 = pcolors[24]
     tempcolor25 = pcolors[25]
@@ -823,6 +851,7 @@ def bTopClock(pcolors):
     tempcolor14 = pcolors[14]
     tempcolor15 = pcolors[15]
 
+    #new code
     pcolors[0] = tempcolor9
     pcolors[2] = tempcolor10
     pcolors[1] = tempcolor11
@@ -846,82 +875,6 @@ def bTopClock(pcolors):
     pcolors[13] = tempcolor3
     pcolors[14] = tempcolor2
     pcolors[15] = tempcolor0
-
-    tempcolor25 = pcolors[25]
-    tempcolor26 = pcolors[26]
-    tempcolor27 = pcolors[27]
-    tempcolor28 = pcolors[28]
-    tempcolor29 = pcolors[29]
-    tempcolor30 = pcolors[30]
-    tempcolor31 = pcolors[31]
-
-    pcolors[25] = pcolors[32]
-    pcolors[26] = pcolors[34]
-    pcolors[27] = pcolors[35]
-    pcolors[28] = pcolors[39]
-    pcolors[29] = pcolors[40]
-    pcolors[30] = pcolors[46]
-    pcolors[31] = pcolors[47]
-
-    pcolors[32] = pcolors[57]
-    pcolors[34] = pcolors[58]
-    pcolors[35] = pcolors[52]
-    pcolors[39] = pcolors[53]
-    pcolors[40] = pcolors[49]
-    pcolors[46] = pcolors[50]
-    pcolors[47] = pcolors[48]
-
-    pcolors[57] = tempcolor25
-    pcolors[58] = tempcolor26
-    pcolors[52] = tempcolor27
-    pcolors[53] = tempcolor28
-    pcolors[49] = tempcolor29
-    pcolors[50] = tempcolor30
-    pcolors[48] = tempcolor31
-    updateGui()
-    return pcolors
-
-def bTopCounterClock(pcolors):
-
-    tempcolor0 = pcolors[0]
-    tempcolor1 = pcolors[1]
-    tempcolor2 = pcolors[2]
-    tempcolor3 = pcolors[3]
-    tempcolor4 = pcolors[4]
-    tempcolor5 = pcolors[5]
-    tempcolor7 = pcolors[7]
-    tempcolor8 = pcolors[8]
-    tempcolor9 = pcolors[9]
-    tempcolor10 = pcolors[10]
-    tempcolor11 = pcolors[11]
-    tempcolor12 = pcolors[12]
-    tempcolor13 = pcolors[13]
-    tempcolor14 = pcolors[14]
-    tempcolor15 = pcolors[15]
-
-    pcolors[15] = tempcolor9
-    pcolors[14] = tempcolor10
-    pcolors[8] = tempcolor11
-    pcolors[7] = tempcolor12
-    pcolors[3] = tempcolor13
-    pcolors[2] = tempcolor14
-    pcolors[0] = tempcolor15
-
-    pcolors[0] = tempcolor15
-    pcolors[2] = tempcolor14
-    pcolors[1] = tempcolor8
-    pcolors[5] = tempcolor7
-    pcolors[4] = tempcolor3
-    pcolors[10] = tempcolor2
-    pcolors[9] = tempcolor0
-
-    pcolors[9] = tempcolor0
-    pcolors[10] = tempcolor2
-    pcolors[11] = tempcolor1
-    pcolors[12] = tempcolor5
-    pcolors[13] = tempcolor4
-    pcolors[14] = tempcolor10
-    pcolors[15] = tempcolor9
 
     tempcolor25 = pcolors[25]
     tempcolor26 = pcolors[26]
@@ -957,87 +910,135 @@ def bTopCounterClock(pcolors):
     updateGui()
     return pcolors
 
+def bTopCounterClock(pcolors):
+    
+    tempcolor0 = pcolors[0]
+    tempcolor1 = pcolors[1]
+    tempcolor2 = pcolors[2]
+    tempcolor3 = pcolors[3]
+    tempcolor4 = pcolors[4]
+    tempcolor5 = pcolors[5]
+    tempcolor7 = pcolors[7]
+    tempcolor8 = pcolors[8]
+    tempcolor9 = pcolors[9]
+    tempcolor10 = pcolors[10]
+    tempcolor11 = pcolors[11]
+    tempcolor12 = pcolors[12]
+    tempcolor13 = pcolors[13]
+    tempcolor14 = pcolors[14]
+    tempcolor15 = pcolors[15]
+
+    #new code
+    pcolors[15] = tempcolor9
+    pcolors[14] = tempcolor10
+    pcolors[8] = tempcolor11
+    pcolors[7] = tempcolor12
+    pcolors[3] = tempcolor13
+    pcolors[2] = tempcolor14
+    pcolors[0] = tempcolor15
+
+    pcolors[0] = tempcolor15
+    pcolors[2] = tempcolor14
+    pcolors[1] = tempcolor8
+    pcolors[5] = tempcolor7
+    pcolors[4] = tempcolor3
+    pcolors[10] = tempcolor2
+    pcolors[9] = tempcolor0
+
+    pcolors[9] = tempcolor0
+    pcolors[10] = tempcolor2
+    pcolors[11] = tempcolor1
+    pcolors[12] = tempcolor5
+    pcolors[13] = tempcolor4
+    pcolors[14] = tempcolor10
+    pcolors[15] = tempcolor9
+
+    tempcolor25 = pcolors[25]
+    tempcolor26 = pcolors[26]
+    tempcolor27 = pcolors[27]
+    tempcolor28 = pcolors[28]
+    tempcolor29 = pcolors[29]
+    tempcolor30 = pcolors[30]
+    tempcolor31 = pcolors[31]
+
+    pcolors[25] = pcolors[32]
+    pcolors[26] = pcolors[34]
+    pcolors[27] = pcolors[35]
+    pcolors[28] = pcolors[39]
+    pcolors[29] = pcolors[40]
+    pcolors[30] = pcolors[46]
+    pcolors[31] = pcolors[47]
+
+    pcolors[32] = pcolors[57]
+    pcolors[34] = pcolors[58]
+    pcolors[35] = pcolors[52]
+    pcolors[39] = pcolors[53]
+    pcolors[40] = pcolors[49]
+    pcolors[46] = pcolors[50]
+    pcolors[47] = pcolors[48]
+
+    pcolors[57] = tempcolor25
+    pcolors[58] = tempcolor26
+    pcolors[52] = tempcolor27
+    pcolors[53] = tempcolor28
+    pcolors[49] = tempcolor29
+    pcolors[50] = tempcolor30
+    pcolors[48] = tempcolor31
+    updateGui()
+    return pcolors
+    
+
 def bSecondClock(pcolors):
-    #For traditional blue
     tempcolor20 = pcolors[20]
     tempcolor21 = pcolors[21]
     tempcolor22 = pcolors[22]
     tempcolor23 = pcolors[23]
     tempcolor24 = pcolors[24]
 
-    #For traditional green
-    tempcolor56 = pcolors[56]
-    tempcolor55 = pcolors[55]
-    tempcolor54 = pcolors[54]
-    tempcolor53 = pcolors[53]
-    tempcolor52 = pcolors[52]
+    pcolors[20] = pcolors[59]
+    pcolors[21] = pcolors[60]
+    pcolors[22] = pcolors[54]
+    pcolors[23] = pcolors[55]
+    pcolors[24] = pcolors[51]
 
-    #For traditional yellow
-    tempcolor40 = pcolors[40]
-    tempcolor39 = pcolors[39]
-    tempcolor38 = pcolors[38]
-    tempcolor37 = pcolors[37]
-    tempcolor36 = pcolors[36]
+    pcolors[59] = pcolors[33]
+    pcolors[60] = pcolors[37]
+    pcolors[54] = pcolors[38]
+    pcolors[55] = pcolors[44]
+    pcolors[51] = pcolors[45]
 
-    pcolors[40] = tempcolor20
-    pcolors[39] = tempcolor21
+    pcolors[33] = tempcolor20
+    pcolors[37] = tempcolor21
     pcolors[38] = tempcolor22
-    pcolors[37] = tempcolor23
-    pcolors[36] = tempcolor24
-
-    pcolors[56] = tempcolor40
-    pcolors[55] = tempcolor39
-    pcolors[54] = tempcolor38
-    pcolors[53] = tempcolor37
-    pcolors[52] = tempcolor36
-
-    pcolors[20] = tempcolor56
-    pcolors[21] = tempcolor55
-    pcolors[22] = tempcolor54
-    pcolors[23] = tempcolor53
-    pcolors[24] = tempcolor52
+    pcolors[44] = tempcolor23
+    pcolors[45] = tempcolor24
     updateGui()
     return pcolors
 
 def bSecondCounterClock(pcolors):
-    #For traditional blue
     tempcolor20 = pcolors[20]
     tempcolor21 = pcolors[21]
     tempcolor22 = pcolors[22]
     tempcolor23 = pcolors[23]
     tempcolor24 = pcolors[24]
 
-    #For traditional green
-    tempcolor56 = pcolors[56]
-    tempcolor55 = pcolors[55]
-    tempcolor54 = pcolors[54]
-    tempcolor53 = pcolors[53]
-    tempcolor52 = pcolors[52]
+    pcolors[20] = pcolors[33]
+    pcolors[21] = pcolors[37]
+    pcolors[22] = pcolors[38]
+    pcolors[23] = pcolors[44]
+    pcolors[24] = pcolors[45]
 
-    #For traditional yellow
-    tempcolor40 = pcolors[40]
-    tempcolor39 = pcolors[39]
-    tempcolor38 = pcolors[38]
-    tempcolor37 = pcolors[37]
-    tempcolor36 = pcolors[36]
+    pcolors[33] = pcolors[59]
+    pcolors[37] = pcolors[60]
+    pcolors[38] = pcolors[54]
+    pcolors[44] = pcolors[55]
+    pcolors[45] = pcolors[51]
 
-    pcolors[56] = tempcolor20
-    pcolors[55] = tempcolor21
+    pcolors[59] = tempcolor20
+    pcolors[60] = tempcolor21
     pcolors[54] = tempcolor22
-    pcolors[53] = tempcolor23
-    pcolors[52] = tempcolor24
-
-    pcolors[40] = tempcolor56
-    pcolors[39] = tempcolor55
-    pcolors[38] = tempcolor54
-    pcolors[37] = tempcolor53
-    pcolors[36] = tempcolor52
-
-    pcolors[20] = tempcolor40
-    pcolors[21] = tempcolor39
-    pcolors[22] = tempcolor38
-    pcolors[23] = tempcolor37
-    pcolors[24] = tempcolor36
+    pcolors[55] = tempcolor23
+    pcolors[51] = tempcolor24
     updateGui()
     return pcolors
 
@@ -1047,17 +1048,17 @@ def bThirdClock(pcolors):
     tempcolor18 = pcolors[18]
     tempcolor19 = pcolors[19]
 
-    pcolors[17] = pcolors[51]
-    pcolors[18] = pcolors[50]
-    pcolors[19] = pcolors[49]
+    pcolors[17] = pcolors[61]
+    pcolors[18] = pcolors[62]
+    pcolors[19] = pcolors[56]
 
-    pcolors[51] = pcolors[35]
-    pcolors[50] = pcolors[34]
-    pcolors[49] = pcolors[33]
+    pcolors[61] = pcolors[36]
+    pcolors[62] = pcolors[42]
+    pcolors[56] = pcolors[43]
 
-    pcolors[35] = tempcolor17
-    pcolors[34] = tempcolor18
-    pcolors[33] = tempcolor19
+    pcolors[36] = tempcolor17
+    pcolors[42] = tempcolor18
+    pcolors[43] = tempcolor19
     updateGui()
     return pcolors
 
@@ -1066,33 +1067,33 @@ def bThirdCounterClock(pcolors):
     tempcolor18 = pcolors[18]
     tempcolor19 = pcolors[19]
 
-    pcolors[17] = pcolors[35]
-    pcolors[18] = pcolors[34]
-    pcolors[19] = pcolors[33]
+    pcolors[17] = pcolors[36]
+    pcolors[18] = pcolors[42]
+    pcolors[19] = pcolors[43]
 
-    pcolors[35] = pcolors[51]
-    pcolors[34] = pcolors[50]
-    pcolors[33] = pcolors[49]
+    pcolors[36] = pcolors[61]
+    pcolors[42] = pcolors[62]
+    pcolors[43] = pcolors[56]
 
-    pcolors[51] = tempcolor17
-    pcolors[50] = tempcolor18
-    pcolors[49] = tempcolor19
+    pcolors[61] = tempcolor17
+    pcolors[62] = tempcolor18
+    pcolors[56] = tempcolor19
     updateGui()
     return pcolors
 
 def bBottomClock(pcolors):
     tempcolor16 = pcolors[16]
-    pcolors[16] = pcolors[48]
-    pcolors[48] = pcolors[32]
-    pcolors[32] = tempcolor16
+    pcolors[16] = pcolors[63]
+    pcolors[63] = pcolors[41]
+    pcolors[41] = tempcolor16
     updateGui()
     return pcolors
 
 def bBottomCounterClock(pcolors):
     tempcolor16 = pcolors[16]
-    pcolors[16] = pcolors[32]
-    pcolors[32] = pcolors[48]
-    pcolors[48] = tempcolor16
+    pcolors[16] = pcolors[41]
+    pcolors[41] = pcolors[63]
+    pcolors[63] = tempcolor16
     updateGui()
     return pcolors
 
@@ -1640,25 +1641,25 @@ def yBLFPC(pcolors):
     tempcolor44 = pcolors[44]
     tempcolor45 = pcolors[45]
 
-    pcolors[33] = pcolors[29]
-    pcolors[36] = pcolors[27]
-    pcolors[37] = pcolors[28]
+    pcolors[33] = pcolors[20]
+    pcolors[36] = pcolors[17]
+    pcolors[37] = pcolors[21]
     pcolors[38] = pcolors[22]
-    pcolors[41] = pcolors[25]
-    pcolors[42] = pcolors[26]
-    pcolors[43] = pcolors[20]
-    pcolors[44] = pcolors[21]
-    pcolors[45] = pcolors[17]
+    pcolors[41] = pcolors[16]
+    pcolors[42] = pcolors[18]
+    pcolors[43] = pcolors[19]
+    pcolors[44] = pcolors[23]
+    pcolors[45] = pcolors[24]
 
-    pcolors[29] = pcolors[59]
-    pcolors[27] = pcolors[61]
-    pcolors[28] = pcolors[60]
+    pcolors[20] = pcolors[59]
+    pcolors[17] = pcolors[61]
+    pcolors[21] = pcolors[60]
     pcolors[22] = pcolors[54]
-    pcolors[25] = pcolors[63]
-    pcolors[26] = pcolors[62]
-    pcolors[20] = pcolors[56]
-    pcolors[21] = pcolors[55]
-    pcolors[17] = pcolors[51]
+    pcolors[16] = pcolors[63]
+    pcolors[18] = pcolors[62]
+    pcolors[19] = pcolors[56]
+    pcolors[23] = pcolors[55]
+    pcolors[24] = pcolors[51]
 
     pcolors[59] = tempcolor33
     pcolors[61] = tempcolor36
@@ -1669,6 +1670,7 @@ def yBLFPC(pcolors):
     pcolors[56] = tempcolor43
     pcolors[55] = tempcolor44
     pcolors[51] = tempcolor45
+
     updateGui()
     return pcolors
 
@@ -1694,25 +1696,25 @@ def yBLFPCU(pcolors):
     pcolors[44] = pcolors[55]
     pcolors[45] = pcolors[51]
 
-    pcolors[59] = pcolors[29]
-    pcolors[61] = pcolors[27]
-    pcolors[60] = pcolors[28]
+    pcolors[59] = pcolors[20]
+    pcolors[61] = pcolors[17]
+    pcolors[60] = pcolors[21]
     pcolors[54] = pcolors[22]
-    pcolors[63] = pcolors[25]
-    pcolors[62] = pcolors[26]
-    pcolors[56] = pcolors[20]
-    pcolors[55] = pcolors[21]
-    pcolors[51] = pcolors[17]
+    pcolors[63] = pcolors[16]
+    pcolors[62] = pcolors[18]
+    pcolors[56] = pcolors[19]
+    pcolors[55] = pcolors[23]
+    pcolors[51] = pcolors[24]
 
-    pcolors[29] = tempcolor33
-    pcolors[27] = tempcolor36
-    pcolors[28] = tempcolor37
+    pcolors[20] = tempcolor33
+    pcolors[17] = tempcolor36
+    pcolors[21] = tempcolor37
     pcolors[22] = tempcolor38
-    pcolors[25] = tempcolor41
-    pcolors[26] = tempcolor42
-    pcolors[20] = tempcolor43
-    pcolors[21] = tempcolor44
-    pcolors[17] = tempcolor45
+    pcolors[16] = tempcolor41
+    pcolors[18] = tempcolor42
+    pcolors[19] = tempcolor43
+    pcolors[23] = tempcolor44
+    pcolors[24] = tempcolor45
     updateGui()
     return pcolors
 
@@ -1723,15 +1725,15 @@ def yBLTPC(pcolors):
     tempcolor42 = pcolors[42]
     tempcolor43 = pcolors[43]
 
-    pcolors[36] = pcolors[27]
-    pcolors[41] = pcolors[25]
-    pcolors[42] = pcolors[26]
-    pcolors[43] = pcolors[20]
+    pcolors[36] = pcolors[17]
+    pcolors[41] = pcolors[16]
+    pcolors[42] = pcolors[18]
+    pcolors[43] = pcolors[19]
 
-    pcolors[27] = pcolors[61]
-    pcolors[25] = pcolors[63]
-    pcolors[26] = pcolors[62]
-    pcolors[20] = pcolors[56]
+    pcolors[17] = pcolors[61]
+    pcolors[16] = pcolors[63]
+    pcolors[18] = pcolors[62]
+    pcolors[19] = pcolors[56]
 
     pcolors[61] = tempcolor36
     pcolors[63] = tempcolor41
@@ -1752,15 +1754,15 @@ def yBLTPCU(pcolors):
     pcolors[42] = pcolors[62]
     pcolors[43] = pcolors[56]
 
-    pcolors[61] = pcolors[27]
-    pcolors[63] = pcolors[25]
-    pcolors[62] = pcolors[26]
-    pcolors[56] = pcolors[20]
+    pcolors[61] = pcolors[17]
+    pcolors[63] = pcolors[16]
+    pcolors[62] = pcolors[18]
+    pcolors[56] = pcolors[19]
 
-    pcolors[27] = tempcolor36
-    pcolors[25] = tempcolor41
-    pcolors[26] = tempcolor42
-    pcolors[20] = tempcolor43
+    pcolors[17] = tempcolor36
+    pcolors[16] = tempcolor41
+    pcolors[18] = tempcolor42
+    pcolors[19] = tempcolor43
     updateGui()
     return pcolors
 
@@ -2037,430 +2039,113 @@ def gBLTPCU(pcolors):
     return pcolors
 
 def gBRFPC(pcolors):
-    tempcolor33 = pcolors[33]
-    tempcolor36 = pcolors[36]
-    tempcolor37 = pcolors[37]
-    tempcolor38 = pcolors[38]
-    tempcolor41=  pcolors[41]
-    tempcolor42 = pcolors[42]
-    tempcolor43 = pcolors[43]
-    tempcolor44 = pcolors[44]
-    tempcolor45 = pcolors[45]
-
-    pcolors[33] = pcolors[59]
-    pcolors[36] = pcolors[61]
-    pcolors[37] = pcolors[60]
-    pcolors[38] = pcolors[54]
-    pcolors[41] = pcolors[63]
-    pcolors[42] = pcolors[62]
-    pcolors[43] = pcolors[56]
-    pcolors[44] = pcolors[55]
-    pcolors[45] = pcolors[51]
-
-    pcolors[59] = pcolors[29]
-    pcolors[61] = pcolors[27]
-    pcolors[60] = pcolors[28]
-    pcolors[54] = pcolors[22]
-    pcolors[63] = pcolors[25]
-    pcolors[62] = pcolors[26]
-    pcolors[56] = pcolors[20]
-    pcolors[55] = pcolors[21]
-    pcolors[51] = pcolors[17]
-
-    pcolors[29] = tempcolor33
-    pcolors[27] = tempcolor36
-    pcolors[28] = tempcolor37
-    pcolors[22] = tempcolor38
-    pcolors[25] = tempcolor41
-    pcolors[26] = tempcolor42
-    pcolors[20] = tempcolor43
-    pcolors[21] = tempcolor44
-    pcolors[17] = tempcolor45
+    pcolors = yBLFPCU(pcolors)
     updateGui()
     return pcolors
 
 def gBRFPCU(pcolors):
-    tempcolor33 = pcolors[33]
-    tempcolor36 = pcolors[36]
-    tempcolor37 = pcolors[37]
-    tempcolor38 = pcolors[38]
-    tempcolor41=  pcolors[41]
-    tempcolor42 = pcolors[42]
-    tempcolor43 = pcolors[43]
-    tempcolor44 = pcolors[44]
-    tempcolor45 = pcolors[45]
-
-    pcolors[33] = pcolors[29]
-    pcolors[36] = pcolors[27]
-    pcolors[37] = pcolors[28]
-    pcolors[38] = pcolors[22]
-    pcolors[41] = pcolors[25]
-    pcolors[42] = pcolors[26]
-    pcolors[43] = pcolors[20]
-    pcolors[44] = pcolors[21]
-    pcolors[45] = pcolors[17]
-
-    pcolors[29] = pcolors[59]
-    pcolors[27] = pcolors[61]
-    pcolors[28] = pcolors[60]
-    pcolors[22] = pcolors[54]
-    pcolors[25] = pcolors[63]
-    pcolors[26] = pcolors[62]
-    pcolors[20] = pcolors[56]
-    pcolors[21] = pcolors[55]
-    pcolors[17] = pcolors[51]
-
-    pcolors[59] = tempcolor33
-    pcolors[61] = tempcolor36
-    pcolors[60] = tempcolor37
-    pcolors[54] = tempcolor38
-    pcolors[63] = tempcolor41
-    pcolors[62] = tempcolor42
-    pcolors[56] = tempcolor43
-    pcolors[55] = tempcolor44
-    pcolors[51] = tempcolor45
+    pcolors = yBLFPC(pcolors)
     updateGui()
     return pcolors
 
 def gBRTPC(pcolors):
-    tempcolor36 = pcolors[36]
-    tempcolor41 = pcolors[41]
-    tempcolor42 = pcolors[42]
-    tempcolor43 = pcolors[43]
-
-    pcolors[36] = pcolors[61]
-    pcolors[41] = pcolors[63]
-    pcolors[42] = pcolors[62]
-    pcolors[43] = pcolors[56]
-
-    pcolors[61] = pcolors[27]
-    pcolors[63] = pcolors[25]
-    pcolors[62] = pcolors[26]
-    pcolors[56] = pcolors[20]
-
-    pcolors[27] = tempcolor36
-    pcolors[25] = tempcolor41
-    pcolors[26] = tempcolor42
-    pcolors[20] = tempcolor43
+    pcolors = yBLTPCU(pcolors)
     updateGui()
     return pcolors
 
 def gBRTPCU(pcolors):
-    tempcolor36 = pcolors[36]
-    tempcolor41 = pcolors[41]
-    tempcolor42 = pcolors[42]
-    tempcolor43 = pcolors[43]
+    # tempcolor36 = pcolors[36]
+    # tempcolor41 = pcolors[41]
+    # tempcolor42 = pcolors[42]
+    # tempcolor43 = pcolors[43]
 
-    pcolors[36] = pcolors[27]
-    pcolors[41] = pcolors[25]
-    pcolors[42] = pcolors[26]
-    pcolors[43] = pcolors[20]
+    # pcolors[36] = pcolors[27]
+    # pcolors[41] = pcolors[25]
+    # pcolors[42] = pcolors[26]
+    # pcolors[43] = pcolors[20]
 
-    pcolors[27] = pcolors[61]
-    pcolors[25] = pcolors[63]
-    pcolors[26] = pcolors[62]
-    pcolors[20] = pcolors[56]
+    # pcolors[27] = pcolors[61]
+    # pcolors[25] = pcolors[63]
+    # pcolors[26] = pcolors[62]
+    # pcolors[20] = pcolors[56]
 
-    pcolors[61] = tempcolor36
-    pcolors[63] = tempcolor41
-    pcolors[62] = tempcolor42
-    pcolors[56] = tempcolor43
+    # pcolors[61] = tempcolor36
+    # pcolors[63] = tempcolor41
+    # pcolors[62] = tempcolor42
+    # pcolors[56] = tempcolor43
+    pcolors = yBLTPC(pcolors)
     updateGui()
     return pcolors
 
 def rBLFPC(pcolors):
-    tempcolor1 = pcolors[1]
-    tempcolor4 = pcolors[4]
-    tempcolor5 = pcolors[5]
-    tempcolor6 = pcolors[6]
-    tempcolor9 = pcolors[9]
-    tempcolor10 = pcolors[10]
-    tempcolor11 = pcolors[11]
-    tempcolor12 = pcolors[12]
-    tempcolor13 = pcolors[13]
-
-    pcolors[1] = pcolors[29]
-    pcolors[4] = pcolors[27]
-    pcolors[5] = pcolors[28]
-    pcolors[6] = pcolors[22]
-    pcolors[9] = pcolors[25]
-    pcolors[10] = pcolors[26]
-    pcolors[11] = pcolors[20]
-    pcolors[12] = pcolors[21]
-    pcolors[13] = pcolors[17]
-
-    pcolors[29] = pcolors[43]
-    pcolors[27] = pcolors[45]
-    pcolors[28] = pcolors[44]
-    pcolors[22] = pcolors[38]
-    pcolors[25] = pcolors[47]
-    pcolors[26] = pcolors[46]
-    pcolors[20] = pcolors[40]
-    pcolors[21] = pcolors[39]
-    pcolors[17] = pcolors[35]
-
-    pcolors[43] = tempcolor1
-    pcolors[45] = tempcolor4
-    pcolors[44] = tempcolor5
-    pcolors[38] = tempcolor6
-    pcolors[47] = tempcolor9
-    pcolors[46] = tempcolor10
-    pcolors[40] = tempcolor11
-    pcolors[39] = tempcolor12
-    pcolors[35] = tempcolor13
+    pcolors = yBRFPCU(pcolors)
     updateGui()
     return pcolors
 
 def rBLFPCU(pcolors):
-    tempcolor1 = pcolors[1]
-    tempcolor4 = pcolors[4]
-    tempcolor5 = pcolors[5]
-    tempcolor6 = pcolors[6]
-    tempcolor9 = pcolors[9]
-    tempcolor10 = pcolors[10]
-    tempcolor11 = pcolors[11]
-    tempcolor12 = pcolors[12]
-    tempcolor13 = pcolors[13]
-
-    pcolors[1] = pcolors[43]
-    pcolors[4] = pcolors[45]
-    pcolors[5] = pcolors[44]
-    pcolors[6] = pcolors[38]
-    pcolors[9] = pcolors[47]
-    pcolors[10] = pcolors[46]
-    pcolors[11] = pcolors[40]
-    pcolors[12] = pcolors[39]
-    pcolors[13] = pcolors[35]
-
-    pcolors[43] = pcolors[29]
-    pcolors[45] = pcolors[27]
-    pcolors[44] = pcolors[28]
-    pcolors[38] = pcolors[22]
-    pcolors[47] = pcolors[25]
-    pcolors[46] = pcolors[26]
-    pcolors[40] = pcolors[20]
-    pcolors[39] = pcolors[21]
-    pcolors[35] = pcolors[17]
-
-    pcolors[29] = tempcolor1
-    pcolors[27] = tempcolor4
-    pcolors[28] = tempcolor5
-    pcolors[22] = tempcolor6
-    pcolors[25] = tempcolor9
-    pcolors[26] = tempcolor10
-    pcolors[20] = tempcolor11
-    pcolors[21] = tempcolor12
-    pcolors[17] = tempcolor13
+    pcolors = yBRFPC(pcolors)
     updateGui()
     return pcolors
 
 def rBLTPC(pcolors):
-    tempcolor4 = pcolors[4]
-    tempcolor9 = pcolors[9]
-    tempcolor10 = pcolors[10]
-    tempcolor11 = pcolors[11]
-
-    pcolors[4] = pcolors[27]
-    pcolors[9] = pcolors[25]
-    pcolors[10] = pcolors[26]
-    pcolors[11] = pcolors[20]
-
-    pcolors[27] = pcolors[45]
-    pcolors[25] = pcolors[47]
-    pcolors[26] = pcolors[46]
-    pcolors[20] = pcolors[40]
-
-    pcolors[45] = tempcolor4
-    pcolors[47] = tempcolor9
-    pcolors[46] = tempcolor10
-    pcolors[40] = tempcolor11
+    pcolors = yBRTPCU(pcolors)
     updateGui()
     return pcolors
 
 def rBLTPCU(pcolors):
-    tempcolor4 = pcolors[4]
-    tempcolor9 = pcolors[9]
-    tempcolor10 = pcolors[10]
-    tempcolor11 = pcolors[11]
-
-    pcolors[4] = pcolors[45]
-    pcolors[9] = pcolors[47]
-    pcolors[10] = pcolors[46]
-    pcolors[11] = pcolors[40]
-
-    pcolors[45] = pcolors[27]
-    pcolors[47] = pcolors[25]
-    pcolors[46] = pcolors[26]
-    pcolors[40] = pcolors[20]
-
-    pcolors[27] = tempcolor4
-    pcolors[25] = tempcolor9
-    pcolors[26] = tempcolor10
-    pcolors[20] = tempcolor11
+    pcolors = yBRTPC(pcolors)
     updateGui()
     return pcolors
 
 def rBRFPC(pcolors):
-    tempcolor3 = pcolors[3]
-    tempcolor6 = pcolors[6]
-    tempcolor7 = pcolors[7]
-    tempcolor8 = pcolors[8]
-    tempcolor11 = pcolors[11]
-    tempcolor12 = pcolors[12]
-    tempcolor13 = pcolors[13]
-    tempcolor14 = pcolors[14]
-    tempcolor15 = pcolors[15]
-
-    pcolors[3] = pcolors[27]
-    pcolors[6] = pcolors[22]
-    pcolors[7] = pcolors[28]
-    pcolors[8] = pcolors[29]
-    pcolors[11] = pcolors[19]
-    pcolors[12] = pcolors[23]
-    pcolors[13] = pcolors[24]
-    pcolors[14] = pcolors[30]
-    pcolors[15] = pcolors[31]
-
-    pcolors[27] = pcolors[61]
-    pcolors[22] = pcolors[54]
-    pcolors[28] = pcolors[60]
-    pcolors[29] = pcolors[59]
-    pcolors[19] = pcolors[49]
-    pcolors[23] = pcolors[53]
-    pcolors[24] = pcolors[52]
-    pcolors[30] = pcolors[58]
-    pcolors[31] = pcolors[57]
-
-    pcolors[61] = tempcolor3
-    pcolors[54] = tempcolor6
-    pcolors[60] = tempcolor7
-    pcolors[59] = tempcolor8
-    pcolors[49] = tempcolor11
-    pcolors[53] = tempcolor12
-    pcolors[52] = tempcolor13
-    pcolors[58] = tempcolor14
-    pcolors[57] = tempcolor15
+    pcolors = gBLFPCU(pcolors)
     updateGui()
     return pcolors
 
 def rBRFPCU(pcolors):
-    tempcolor3 = pcolors[3]
-    tempcolor6 = pcolors[6]
-    tempcolor7 = pcolors[7]
-    tempcolor8 = pcolors[8]
-    tempcolor11 = pcolors[11]
-    tempcolor12 = pcolors[12]
-    tempcolor13 = pcolors[13]
-    tempcolor14 = pcolors[14]
-    tempcolor15 = pcolors[15]
-
-    pcolors[3] = pcolors[61]
-    pcolors[6] = pcolors[54]
-    pcolors[7] = pcolors[60]
-    pcolors[8] = pcolors[59]
-    pcolors[11] = pcolors[49]
-    pcolors[12] = pcolors[53]
-    pcolors[13] = pcolors[52]
-    pcolors[14] = pcolors[58]
-    pcolors[15] = pcolors[57]
-
-    pcolors[61] = pcolors[27]
-    pcolors[54] = pcolors[22]
-    pcolors[60] = pcolors[28]
-    pcolors[59] = pcolors[29]
-    pcolors[49] = pcolors[19]
-    pcolors[53] = pcolors[23]
-    pcolors[52] = pcolors[24]
-    pcolors[58] = pcolors[30]
-    pcolors[57] = pcolors[31]
-
-    pcolors[27] = tempcolor3
-    pcolors[22] = tempcolor6
-    pcolors[28] = tempcolor7
-    pcolors[29] = tempcolor8
-    pcolors[19] = tempcolor11
-    pcolors[23] = tempcolor12
-    pcolors[24] = tempcolor13
-    pcolors[30] = tempcolor14
-    pcolors[31] = tempcolor15
+    pcolors = gBLFPC(pcolors)
     updateGui()
     return pcolors
 
 def rBRTPC(pcolors):
-    tempcolor8 = pcolors[8]
-    tempcolor13 = pcolors[13]
-    tepmcolor14 = pcolors[14]
-    tempcolor15 = pcolors[15]
-
-    pcolors[8] = pcolors[29]
-    pcolors[13] = pcolors[24]
-    pcolors[14] = pcolors[30]
-    pcolors[15] = pcolors[31]
-
-    pcolors[29] = pcolors[59]
-    pcolors[24] = pcolors[52]
-    pcolors[30] = pcolors[58]
-    pcolors[31] = pcolors[57]
-
-    pcolors[59] = tempcolor8
-    pcolors[52] = tempcolor13
-    pcolors[58] = tepmcolor14
-    pcolors[57] = tempcolor15
+    pcolors = gBLTPCU(pcolors)
     updateGui()
     return pcolors
 
 def rBRTPCU(pcolors):
-    tempcolor8 = pcolors[8]
-    tempcolor13 = pcolors[13]
-    tempcolor14 = pcolors[14]
-    tempcolor15 = pcolors[15]
-
-    pcolors[8] = pcolors[59]
-    pcolors[13] = pcolors[52]
-    pcolors[14] = pcolors[58]
-    pcolors[15] = pcolors[57]
-
-    pcolors[59] = pcolors[29]
-    pcolors[52] = pcolors[24]
-    pcolors[58] = pcolors[30]
-    pcolors[57] = pcolors[31]
-
-    pcolors[29] = tempcolor8
-    pcolors[24] = tempcolor13
-    pcolors[30] = tempcolor14
-    pcolors[31] = tempcolor15
+    pcolors = gBLTPC(pcolors)
     updateGui()
     return pcolors
 
 def rgbCC(pcolors):
-    tempcolor9 = pcolors[9]
-    pcolors[9] = pcolors[25]
-    pcolors[25] = pcolors[63]
-    pcolors[63] = tempcolor9
+    tempcolor15 = pcolors[15]
+    pcolors[15] = pcolors[31]
+    pcolors[31] = pcolors[57]
+    pcolors[57] = tempcolor15
     updateGui()
     return pcolors
 
 def rgbCCU(pcolors):
-    tempcolor9 = pcolors[9]
-    pcolors[9] = pcolors[63]
-    pcolors[63] = pcolors[25]
-    pcolors[25] = tempcolor9
+    tempcolor15 = pcolors[15]
+    pcolors[15] = pcolors[57]
+    pcolors[57] = pcolors[31]
+    pcolors[31] = tempcolor15
     updateGui()
     return pcolors
 
 def rybCC(pcolors):
-    tempcolor15 = pcolors[15]
-    pcolors[15] = pcolors[31]
-    pcolors[31] = pcolors[41]
-    pcolors[41] = tempcolor15
+    tempcolor9 = pcolors[9]
+    pcolors[9] = pcolors[25]
+    pcolors[25] =pcolors[47]
+    pcolors[47] = tempcolor9
     updateGui()
     return pcolors
 
 def rybCCU(pcolors):
-    tempcolor15 = pcolors[15]
-    pcolors[15] = pcolors[41]
-    pcolors[41] = pcolors[31]
-    pcolors[31] = tempcolor15
+    tempcolor9 = pcolors[9]
+    pcolors[9] =  pcolors[47]
+    pcolors[47] = pcolors[25]
+    pcolors[25] = tempcolor9
     updateGui()
     return pcolors
 
@@ -2471,8 +2156,15 @@ def rybCCU(pcolors):
 root = Tk()
 root.title("Pyraminx")
 canvas = Canvas(root, width=1500, height=1000)
+
+#red is 0, blue is 1, yellow is 2, green is 3, black isn't used but is 4
 colors = ["red", "blue", "yellow", "green", "black"]
 canvas.pack()
+
+flag = 0    #GUI toggle
+counterClockToggle = 0  #A* search toggle
+startingcolors = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]
+startingcopy = startingcolors
 
 reset()
 
@@ -2484,7 +2176,11 @@ entry.place(x = 580,  y = 770)
 
 #Toggle graphics button
 toggleButton = Button(root, text = "Toggle GUI Update", command = toggle_func, bg = 'gray')
-toggleButton.place(x = 150, y = 765)
+toggleButton.place(x = 175, y = 765)
+
+#Toggle reset button
+resetButton = Button(root, text = "Reset GUI", command = reset, bg = 'pink')
+resetButton.place(x = 80, y = 765)
 
 #Toggle if A* scrambler should only scramble using counter or counterclockwise movements
 counterClockToggleButton = Button(root, text = "All Moves Possible", command = counterClockToggle_func, bg = 'gray')
